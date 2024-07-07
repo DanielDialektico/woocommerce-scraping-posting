@@ -1,12 +1,12 @@
 import pandas as pd
 import os
 import requests
-from src.config.config import SCRAPE_URLS, LOGGING_scraping_FILE
+from src.config.config import PRODUCT_URLS_CSV, LOGGING_SCRAPING_FILE
 from src.common.utils import files_output_path, setup_logging
 from src.domain.abstractions import WebsiteScrapingPipelineProtocol
 
 # Initialize the logger
-logger = setup_logging(LOGGING_scraping_FILE)
+logger = setup_logging(LOGGING_SCRAPING_FILE)
 
 class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
     """
@@ -44,7 +44,7 @@ class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
         Load URLs from the CSV file.
         """
         try:
-            urls_path = files_output_path('files\\tables', SCRAPE_URLS)
+            urls_path = files_output_path('files\\tables', PRODUCT_URLS_CSV)
             return pd.read_csv(urls_path, encoding='latin1')
         except Exception as e:
             logger.error(f"Error reading URLs file: {e}")

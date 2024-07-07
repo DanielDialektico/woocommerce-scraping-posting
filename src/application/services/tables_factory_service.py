@@ -1,10 +1,10 @@
 import pandas as pd
 from src.domain.tables import TableDefinitions 
-from src.config.config import SCRAPPED_PRODUCTS_CSV, LOGGING_scraping_FILE
+from src.config.config import SCRAPPED_PRODUCTS_CSV, LOGGING_SCRAPING_FILE
 from src.common.utils import files_output_path, setup_logging
 
 # Initialize logger
-logger = setup_logging(LOGGING_scraping_FILE)
+logger = setup_logging(LOGGING_SCRAPING_FILE)
 
 class TablesFactoryService:
     
