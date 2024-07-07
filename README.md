@@ -1,6 +1,6 @@
 # WooCommerce Scraping and Posting Pipeline
 
-This is a pipeline to "migrate" products from a website to a WooCommerce account (for dropshipping purposes) composed of four stages:
+This is a pipeline to migrate products from a website to a WooCommerce account (for dropshipping purposes) composed of four stages:
 
 1. **Crawl a website** searching for products with a specific URL prefix, and save the URLs to a CSV.
 2. **Scrape the product information and images** from the URLs stored in the CSV, and save them in a CSV and specific directories, respectively.
