@@ -1,0 +1,13 @@
+# Force LF in Jupyter Notebooks and CSV files
+*.ipynb text eol=lf
+*.csv text eol=lf
+
+# Force LF in source code files
+*.py text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+
+# Force CRLF in Windows batch files
+*.bat text eol=crlf

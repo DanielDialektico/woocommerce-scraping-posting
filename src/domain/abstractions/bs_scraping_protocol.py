@@ -1,0 +1,29 @@
+from typing import Protocol
+
+class BSScrapingServiceProtocol(Protocol):
+    def __init__(self) -> None:
+        ...
+
+    def scrape(self, URL: str) -> dict:
+        ...
+
+    def scrape_title(self) -> str:
+        ...
+
+    def scrape_price(self) -> str:
+        ...
+
+    def scrape_brand(self) -> str:
+        ...
+
+    def scrape_description(self) -> str:
+        ...
+
+    def scrape_data_tags(self) -> tuple:
+        ...
+
+    def scrape_attribute(self) -> str:
+        ...
+
+    def scrape_images(self) -> list:
+        ...

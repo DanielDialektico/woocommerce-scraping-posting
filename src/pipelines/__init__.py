@@ -1,0 +1,4 @@
+from .website_crawling_pipeline import WebsiteCrawlingPipeline
+from .website_scraping_pipeline import WebsiteScrapingPipeline
+from .images_upload_pipeline import ImagesUploadPipeline
+from .products_uploading_pipeline import ProductsUploadingPipeline

@@ -1,0 +1,6 @@
+from typing import Protocol
+
+class WebsiteCrawlingPipelineProtocol(Protocol):
+    def __init__(self, container): ...
+
+    def run(self): ...
