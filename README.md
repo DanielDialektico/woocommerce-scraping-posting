@@ -72,3 +72,5 @@ This is a pipeline to migrate products from a website to a WooCommerce account (
 By following these steps, you can set up and run the pipeline to migrate products from a website to your WooCommerce account.
 
 To personalize this pipeline, you need to adapt the code to your needs. Especially, the website scraping stage needs to target the specific selectors of the website you wish to scrape, these selectors are configurable in the BSScrapingService class in src/infrastructure/services/bs_scraping_service.py.
+
+For more content, visit https://dialektico.com/
