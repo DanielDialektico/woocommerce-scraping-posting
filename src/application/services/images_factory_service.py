@@ -106,6 +106,7 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
         2. Writes the DataFrame to the CSV file with the specified encoding.
         3. Logs the completion of the save operation.
         """
+
         output_path = files_output_path('files\\tables', UPDATED_PRODUCTS_CSV)
         df.to_csv(output_path, index=False, encoding='latin1')
         self.logger.info(f"Updated CSV with image URLs has been saved to {output_path}")

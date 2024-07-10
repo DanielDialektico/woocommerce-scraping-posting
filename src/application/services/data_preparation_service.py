@@ -54,7 +54,7 @@ class DataPreparationService(DataPreparationServiceProtocol):
         row['default_attributes'] = default_attributes
         return row
     
-    def prepare_data(self, csv_name: str) -> pd.DataFrame:
+    def prepare_data(self, products_csv_name: str, descriptions_csv_name) -> pd.DataFrame:
         """
         Prepares data from a CSV file for processing.
 
@@ -64,9 +64,22 @@ class DataPreparationService(DataPreparationServiceProtocol):
         Returns:
             pd.DataFrame: DataFrame with prepared data.
         """
-        csv_path = files_output_path('files\\tables', csv_name)
+        csv_path = files_output_path('files\\tables', products_csv_name)
         # Load the CSV file into a DataFrame
-        df = pd.read_csv(csv_path, encoding='latin1')
+        prod_df = pd.read_csv(csv_path, encoding='latin1')
+
+        desc_csv_path = files_output_path('files\\tables', descriptions_csv_name)
+        # Load the CSV file into a DataFrame
+        desc_df = pd.read_csv(desc_csv_path, encoding='utf-8')
+
+        # Concat products dataframe with the descriptions dataframe
+        df = pd.concat([prod_df, desc_df], axis=1)
+        cols = list(df.columns)
+        description_column_index = len(cols) - 1
+        desired_position = 8
+        cols.insert(desired_position, cols.pop(description_column_index))
+
+        df = df[cols]
 
         # Fill null values with empty strings
         df = df.fillna('')

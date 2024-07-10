@@ -1,6 +1,6 @@
 import os
 from src.common.utils import setup_logging
-from src.config.config import LOGGING_PRODUCTS_FILE, UPDATED_PRODUCTS_CSV, WC_URL
+from src.config.config import LOGGING_PRODUCTS_FILE, UPDATED_PRODUCTS_CSV, WC_URL, SCRAPED_DESCRIPTIONS_CSV
 from src.domain.abstractions import ProductsUploadingPipelineProtocol
 
 class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
@@ -48,7 +48,7 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
         Prepare data for uploading.
         """
         try:
-            products = self.data_preparation_service.prepare_data(UPDATED_PRODUCTS_CSV)
+            products = self.data_preparation_service.prepare_data(UPDATED_PRODUCTS_CSV, SCRAPED_DESCRIPTIONS_CSV)
             print('Data prepared.')
             self.logger.info('Data prepared.')
             return products

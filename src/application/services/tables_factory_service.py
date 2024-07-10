@@ -1,6 +1,6 @@
 import pandas as pd
 from src.domain.tables import TableDefinitions 
-from src.config.config import SCRAPED_PRODUCTS_CSV, LOGGING_SCRAPING_FILE
+from src.config.config import SCRAPED_PRODUCTS_CSV, LOGGING_SCRAPING_FILE, SCRAPED_DESCRIPTIONS_CSV
 from src.common.utils import files_output_path, setup_logging
 
 class TablesFactoryService:
@@ -259,7 +259,17 @@ class TablesFactoryService:
         Expected output:
         - None (saves the DataFrame to a CSV file).
         """
-        output_path = files_output_path('files\\tables', SCRAPED_PRODUCTS_CSV)
-        df.to_csv(output_path, index=False, encoding='latin1')
-        self.logger.info(f'\n{len(df)} products have been saved to {output_path}')
-        print(f'{len(df)} products have been saved to {output_path}')
+        df_output_path = files_output_path('files\\tables', SCRAPED_PRODUCTS_CSV)
+        df_desc_output_path = files_output_path('files\\tables', SCRAPED_DESCRIPTIONS_CSV)
+       
+        df_desc = df[['description']]
+        df = df.drop(columns=['description'])
+    
+        df_desc.to_csv(df_desc_output_path, index=False, encoding='utf-8')
+        df.to_csv(df_output_path, index=False, encoding='latin1')
+
+        self.logger.info(f'\n{len(df)} products have been saved to {df_output_path}')
+        print(f'{len(df)} products have been saved to {df_output_path}')
+
+        self.logger.info(f'\n{len(df)} product descriptions have been saved to {df_desc_output_path}')
+        print(f'{len(df)} product descriptions have been saved to {df_desc_output_path}')        
