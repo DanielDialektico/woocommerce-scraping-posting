@@ -266,7 +266,7 @@ class TablesFactoryService:
         df = df.drop(columns=['description'])
     
         df_desc.to_csv(df_desc_output_path, index=False, encoding='utf-8')
-        df.to_csv(df_output_path, index=False, encoding='latin1')
+        df.to_csv(df_output_path, index=False, encoding='utf-8')
 
         self.logger.info(f'\n{len(df)} products have been saved to {df_output_path}')
         print(f'{len(df)} products have been saved to {df_output_path}')

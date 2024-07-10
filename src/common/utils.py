@@ -30,7 +30,7 @@ def setup_logging(service_name: str):
 
     logger = logging.getLogger(service_name)
     if not logger.hasHandlers():
-        handler = logging.FileHandler(log_directory)
+        handler = logging.FileHandler(log_directory, encoding='utf-8')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)

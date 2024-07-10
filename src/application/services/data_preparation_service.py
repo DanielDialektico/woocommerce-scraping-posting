@@ -66,7 +66,7 @@ class DataPreparationService(DataPreparationServiceProtocol):
         """
         csv_path = files_output_path('files\\tables', products_csv_name)
         # Load the CSV file into a DataFrame
-        prod_df = pd.read_csv(csv_path, encoding='latin1')
+        prod_df = pd.read_csv(csv_path, encoding='utf-8')
 
         desc_csv_path = files_output_path('files\\tables', descriptions_csv_name)
         # Load the CSV file into a DataFrame

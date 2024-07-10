@@ -70,4 +70,4 @@ def test_save_updated_csv(mock_to_csv, mock_files_output_path, mock_read_csv):
     service.save_updated_csv(updated_df)
 
     # Assert
-    mock_to_csv.assert_called_once_with('mock/path/files\\tables/updated-wc_products.csv', index=False, encoding='latin1')
+    mock_to_csv.assert_called_once_with('mock/path/files\\tables/updated-wc_products.csv', index=False, encoding='utf-8')

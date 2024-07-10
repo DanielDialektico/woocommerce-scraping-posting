@@ -65,4 +65,4 @@ def test_save_products_csv(mock_to_csv, mock_files_output_path):
     service.save_products_csv(test_df)
 
     # Assert
-    mock_to_csv.assert_called_once_with('mock/path/files/tables/scraped-products.csv', index=False, encoding='latin1')
+    mock_to_csv.assert_called_once_with('mock/path/files/tables/scraped-products.csv', index=False, encoding='utf-8')

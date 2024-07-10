@@ -1,5 +1,6 @@
 import os
 from typing import List
+import re
 import pandas as pd
 from src.common.utils import files_output_path, setup_logging
 from src.config.config import SCRAPED_PRODUCTS_CSV, UPDATED_PRODUCTS_CSV, LOGGING_IMAGES_FILE
@@ -12,10 +13,27 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
 
         Loads the WooCommerce DataFrame from a CSV file and sets the base path for images.
         """
-        self.wooc_df = pd.read_csv(files_output_path('files\\tables', SCRAPED_PRODUCTS_CSV), encoding='latin1')
+        self.wooc_df = pd.read_csv(files_output_path('files\\tables', SCRAPED_PRODUCTS_CSV), encoding='utf-8')
         self.images_base_path = files_output_path('files\\images', '')
         self.logger = setup_logging(LOGGING_IMAGES_FILE)
 
+    def create_product_path(self, cleaned_title: str) -> str:
+        """
+        Create the product path for saving images.
+        """
+        cleaned_title = re.sub(r'[<>:"/\\|?*]', '_', cleaned_title)
+        base_path = self.images_base_path
+        max_length = 220 - len(os.path.abspath(base_path)) - 1
+
+        if len(cleaned_title) > max_length:
+            cleaned_title = cleaned_title[:max_length]
+
+        product_path = os.path.join(base_path, cleaned_title)
+        
+        if not os.path.exists(product_path):
+            os.makedirs(product_path)
+
+        return product_path
 
     def create_paths_table(self) -> pd.DataFrame:
         """
@@ -35,7 +53,7 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
         5. Renames images and updates the 'route' column.
         6. Removes duplicate paths and returns the updated DataFrame.
         """
-        self.logger.info("Initialized ImagesFactoryService.")        
+        self.logger.info("Initialized ImagesFactoryService.")
         self.logger.info("Creating paths table.")
         paths_df = self.wooc_df[['name', 'image_id/gallery_image_ids', 'sku', 'parent_id']].copy()
 
@@ -47,19 +65,24 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
                     self.logger.debug(f"Updated name for SKU {row['sku']} to parent name {parent_name[0]}.")
 
         paths_df = paths_df.assign(image_id=paths_df['image_id/gallery_image_ids'].str.split(',')).explode('image_id')
-        paths_df['route'] = paths_df.apply(lambda row: os.path.join(self.images_base_path, row['name'].replace(' ', '_'), row['image_id'].strip()), axis=1)
+        paths_df['route'] = paths_df.apply(lambda row: os.path.join(self.create_product_path(row['name'].replace(' ', '_')), row['image_id'].strip()), axis=1)
         paths_df = paths_df.drop_duplicates(subset=['route'], keep='last').reset_index(drop=True)
 
         for index, row in paths_df.iterrows():
             old_path = row['route']
             new_image_name = f"{os.path.splitext(row['image_id'])[0]}_{row['sku']}.jpg"
-            new_path = os.path.join(self.images_base_path, row['name'].replace(' ', '_'), new_image_name)
-            os.rename(old_path, new_path)
-            paths_df.at[index, 'route'] = new_path
-            self.logger.debug(f"Renamed image {old_path} to {new_path}.")
+            new_path = os.path.join(self.create_product_path(row['name'].replace(' ', '_')), new_image_name)
+            try:
+                os.rename(old_path, new_path)
+                paths_df.at[index, 'route'] = new_path
+                self.logger.debug(f"Renamed image {old_path} to {new_path}.")
+            except FileNotFoundError as e:
+                self.logger.error(f"Error renaming image {old_path} to {new_path}: {e}")
+            except Exception as e:
+                self.logger.error(f"Unexpected error: {e}")
 
         self.logger.info("Paths table created successfully.")
-        return paths_df    
+        return paths_df
 
     def update_wc_table(self, paths_df: pd.DataFrame, image_urls: List[str]) -> pd.DataFrame:
         """
@@ -108,5 +131,5 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
         """
 
         output_path = files_output_path('files\\tables', UPDATED_PRODUCTS_CSV)
-        df.to_csv(output_path, index=False, encoding='latin1')
+        df.to_csv(output_path, index=False, encoding='utf-8')
         self.logger.info(f"Updated CSV with image URLs has been saved to {output_path}")
