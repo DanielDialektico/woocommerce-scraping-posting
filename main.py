@@ -15,7 +15,7 @@ def main():
     # ----Run the pipelines in sequence
 
     # Run the website crawling pipeline to crawl product URLs.
-    #website_crawling_pipeline.run()
+    website_crawling_pipeline.run()
     
     # Run the website scraping pipeline to scrape data and images from the website
     website_scraping_pipeline.run()
