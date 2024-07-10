@@ -1,10 +1,7 @@
 import pandas as pd
 from src.domain.tables import TableDefinitions 
-from src.config.config import SCRAPPED_PRODUCTS_CSV, LOGGING_SCRAPING_FILE
+from src.config.config import SCRAPED_PRODUCTS_CSV, LOGGING_SCRAPING_FILE, SCRAPED_DESCRIPTIONS_CSV
 from src.common.utils import files_output_path, setup_logging
-
-# Initialize logger
-logger = setup_logging(LOGGING_SCRAPING_FILE)
 
 class TablesFactoryService:
     
@@ -18,6 +15,7 @@ class TablesFactoryService:
         Expected output:
         - None (initializes self.product_df)
         """
+        self.logger = setup_logging(LOGGING_SCRAPING_FILE)
         self.product_df = TableDefinitions.product_table()
 
     def _create_variant_df(self, variant, title, brand, tags, parent_sku, image_name, attribute_name) -> pd.DataFrame:
@@ -210,7 +208,7 @@ class TablesFactoryService:
         Expected output:
         - pd.DataFrame: DataFrame containing the product information.
         """
-        logger.info("Starting to create tables for product.")
+        self.logger.info("Starting to create tables for product.")
         # Process product
         if "variants" in product_data["product"] and len(product_data["product"]["variants"]) > 1:
             attribute_values = [variant["public_title"] for variant in product_data["product"]["variants"] if variant["public_title"]]
@@ -220,14 +218,14 @@ class TablesFactoryService:
                 image_name = image_names[idx + 1] if (idx + 1) < len(image_names) else None
                 variant_df = self._create_variant_df(variant, title, brand, tags, parent_sku, image_name, attribute_name)
                 wooc_df = pd.concat([wooc_df, variant_df], ignore_index=True)
-                logger.info(f"Processed variant {idx + 1}/{len(product_data['product']['variants']) - 1}.")
+                self.logger.info(f"Processed variant {idx + 1}/{len(product_data['product']['variants']) - 1}.")
         else:
             # Single product without variants
             variant = product_data["product"]["variants"][0]
             sku = variant["sku"]
             image_name = image_names[0] if len(image_names) > 0 else None
             wooc_df = self._create_simple_df(title, sku, price, description, brand, tags, image_name, image_names)
-            logger.info("Processed single product without variants.")
+            self.logger.info("Processed single product without variants.")
 
         # Ensure all original CSV columns are in the DataFrame
         for column in self.product_df.columns:
@@ -248,7 +246,7 @@ class TablesFactoryService:
         wooc_df.columns = wooc_df.columns.str.replace(r'\.2', '', regex=True)
         wooc_df.columns = wooc_df.columns.str.replace(r'\.3', '', regex=True)
         
-        logger.info("Finished creating tables for product.")
+        self.logger.info("Finished creating tables for product.")
         return wooc_df
     
     def save_products_csv(self, df: pd.DataFrame) -> None:
@@ -261,7 +259,17 @@ class TablesFactoryService:
         Expected output:
         - None (saves the DataFrame to a CSV file).
         """
-        output_path = files_output_path('files\\tables', SCRAPPED_PRODUCTS_CSV)
-        df.to_csv(output_path, index=False, encoding='latin1')
-        logger.info(f'\n{len(df)} products have been saved to {output_path}')
-        print(f'{len(df)} products have been saved to {output_path}')
+        df_output_path = files_output_path('files\\tables', SCRAPED_PRODUCTS_CSV)
+        df_desc_output_path = files_output_path('files\\tables', SCRAPED_DESCRIPTIONS_CSV)
+       
+        df_desc = df[['description']]
+        df = df.drop(columns=['description'])
+    
+        df_desc.to_csv(df_desc_output_path, index=False, encoding='utf-8')
+        df.to_csv(df_output_path, index=False, encoding='utf-8')
+
+        self.logger.info(f'\n{len(df)} products have been saved to {df_output_path}')
+        print(f'{len(df)} products have been saved to {df_output_path}')
+
+        self.logger.info(f'\n{len(df)} product descriptions have been saved to {df_desc_output_path}')
+        print(f'{len(df)} product descriptions have been saved to {df_desc_output_path}')        

@@ -1,10 +1,7 @@
 import os
 from src.common.utils import setup_logging
-from src.config.config import LOGGING_PRODUCTS_FILE, UPDATED_PRODUCTS_CSV, WC_URL
+from src.config.config import LOGGING_PRODUCTS_FILE, UPDATED_PRODUCTS_CSV, WC_URL, SCRAPED_DESCRIPTIONS_CSV
 from src.domain.abstractions import ProductsUploadingPipelineProtocol
-
-# Initialize logger
-logger = setup_logging(LOGGING_PRODUCTS_FILE)
 
 class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
     """
@@ -18,6 +15,7 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
         Args:
             container (object): The dependency injection container.
         """
+        self.logger = setup_logging(LOGGING_PRODUCTS_FILE)
         self.container = container
         self.data_preparation_service = container.config('data_preparation_service')
         self.wc_upload_service = container.config('wc_upload_service')
@@ -28,10 +26,10 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
         Run the product upload pipeline.
         """
         print("\n-----Wordpress Products Creating Stage-----\n")
-        logger.info("Starting Wordpress Products Uploading Stage")
+        self.logger.info("Starting Wordpress Products Uploading Stage")
 
         print("Preparing data...")
-        logger.info("Preparing data...")
+        self.logger.info("Preparing data...")
         products = self.prepare_data()
         if not products:
             return
@@ -43,19 +41,19 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
 
         total_created = len(parent_id_map) + len([p for p in products if p['type'] == 'simple']) + len([p for p in products if p['type'] == 'variation'])
         print(f"\n{total_created} products have been created in {WC_URL}.")
-        logger.info(f'{total_created} products have been created in {WC_URL}.')
+        self.logger.info(f'{total_created} products have been created in {WC_URL}.')
 
     def prepare_data(self):
         """
         Prepare data for uploading.
         """
         try:
-            products = self.data_preparation_service.prepare_data(UPDATED_PRODUCTS_CSV)
+            products = self.data_preparation_service.prepare_data(UPDATED_PRODUCTS_CSV, SCRAPED_DESCRIPTIONS_CSV)
             print('Data prepared.')
-            logger.info('Data prepared.')
+            self.logger.info('Data prepared.')
             return products
         except Exception as e:
-            logger.error(f"Error preparing data: {e}")
+            self.logger.error(f"Error preparing data: {e}")
             return None
 
     def create_variable_products(self, products, parent_id_map):
@@ -63,7 +61,7 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
         Create variable products and their default variants.
         """
         print("\nCreating variable products...")
-        logger.info("Creating variable products...")    
+        self.logger.info("Creating variable products...")    
 
         counter_v = 0
         for product in products:
@@ -72,7 +70,7 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
                 counter_v += 1
                 if counter_v % 50 == 0:
                     print(f'\n{counter_v} variable products created.')
-                    logger.info(f'\n{counter_v} variable products created.')
+                    self.logger.info(f'\n{counter_v} variable products created.')
 
     def create_variable_product(self, product, parent_id_map):
         """
@@ -88,12 +86,12 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
             if response.status_code == 201:
                 product_id = response.json()['id']
                 parent_id_map[product['sku']] = product_id
-                logger.info(f"Variable product '{product['name']}' created successfully with ID {product_id}.")
+                self.logger.info(f"Variable product '{product['name']}' created successfully with ID {product_id}.")
                 self.create_default_variants(product, product_id)
             else:
-                logger.info(f"Error creating product '{product['name']}']: {response.json()}")
+                self.logger.info(f"Error creating product '{product['name']}']: {response.json()}")
         except Exception as e:
-            logger.error(f"Error creating variable product '{product['name']}': {e}")
+            self.logger.error(f"Error creating variable product '{product['name']}': {e}")
 
     def create_default_variants(self, product, product_id):
         """
@@ -110,9 +108,9 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
             }
             var_response = self.wc_upload_service.create_variation(product_id, variation_data)
             if var_response.status_code == 201:
-                logger.info(f"Default variant '{default_attr['option']}' created successfully for product ID {product_id}.")
+                self.logger.info(f"Default variant '{default_attr['option']}' created successfully for product ID {product_id}.")
             else:
-                logger.info(f"Error creating default variant '{default_attr['option']}']: {var_response.json()}")
+                self.logger.info(f"Error creating default variant '{default_attr['option']}']: {var_response.json()}")
 
     def create_variations(self, products, parent_id_map):
         """
@@ -125,7 +123,7 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
                 counter_vr += 1
                 if counter_vr % 50 == 0:
                     print(f'\n{counter_vr} variants of products created.')
-                    logger.info(f'\n{counter_vr} variants of products created.')
+                    self.logger.info(f'\n{counter_vr} variants of products created.')
 
     def create_variation(self, product, parent_id_map):
         """
@@ -145,13 +143,13 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
                 }
                 response = self.wc_upload_service.create_variation(parent_id, variation_data)
                 if response.status_code == 201:
-                    logger.info(f"Variant '{product['name']}' created successfully for product ID {parent_id}.")
+                    self.logger.info(f"Variant '{product['name']}' created successfully for product ID {parent_id}.")
                 else:
-                    logger.info(f"Error creating variant '{product['name']}']: {response.json()}")
+                    self.logger.info(f"Error creating variant '{product['name']}']: {response.json()}")
             else:
-                logger.info(f"Parent product SKU '{parent_sku}' not found.")
+                self.logger.info(f"Parent product SKU '{parent_sku}' not found.")
         except Exception as e:
-            logger.error(f"Error creating variant '{product['name']}': {e}")
+            self.logger.error(f"Error creating variant '{product['name']}': {e}")
 
     def create_simple_products(self, products):
         """
@@ -164,7 +162,7 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
                 counter_s += 1
                 if counter_s % 50 == 0:
                     print(f'\n\n{counter_s} simple products created.')
-                    logger.info(f'{counter_s} simple products created.')
+                    self.logger.info(f'{counter_s} simple products created.')
 
     def create_simple_product(self, product):
         """
@@ -175,8 +173,8 @@ class ProductsUploadingPipeline(ProductsUploadingPipelineProtocol):
             product['images'] = self.data_preparation_service.process_images(product.get(self.images_column, ''))
             response = self.wc_upload_service.create_product(product)
             if response.status_code == 201:
-                logger.info(f"\nProduct '{product['name']}' created successfully.")
+                self.logger.info(f"\nProduct '{product['name']}' created successfully.")
             else:
-                logger.info(f"Error creating product '{product['name']}']: {response.json()}")
+                self.logger.info(f"Error creating product '{product['name']}']: {response.json()}")
         except Exception as e:
-            logger.error(f"Error creating simple product '{product['name']}': {e}")
+            self.logger.error(f"Error creating simple product '{product['name']}': {e}")

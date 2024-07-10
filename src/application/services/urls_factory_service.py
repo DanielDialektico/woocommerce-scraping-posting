@@ -72,5 +72,5 @@ class URLsFactoryService(URLsFactoryServiceProtocol):
         - None (saves the DataFrame to a CSV file and prints the number of saved URLs)
         """
         output_path = files_output_path('files\\tables', PRODUCT_URLS_CSV)
-        df.to_csv(output_path, index=False, encoding='latin1')
+        df.to_csv(output_path, index=False, encoding='utf-8')
         print(f'{len(df)} URLs have been saved to {output_path}')

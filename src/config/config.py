@@ -6,7 +6,8 @@ CATEGORIES_URL = 'reference_prefix_to_scrape'
 PRODUCT_URLS_CSV = 'products_urls.csv'
 WOOC_SAMPLE = 'wc-importer-sample-products.csv'
 TEST_SCRAPE_URLS = 'test_products_urls.csv'
-SCRAPPED_PRODUCTS_CSV = 'wc-products.csv'
+SCRAPED_DESCRIPTIONS_CSV = 'wc-products-descriptions.csv'
+SCRAPED_PRODUCTS_CSV = 'wc-products.csv'
 UPDATED_PRODUCTS_CSV = 'updated-wc_products.csv'
 
 # Logs.

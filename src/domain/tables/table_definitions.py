@@ -23,7 +23,7 @@ class TableDefinitions(TableDefinitionsProtocol):
         sample_csv_path = files_output_path('files\\tables', WOOC_SAMPLE)
         
         # Read the sample CSV file to get column definitions.
-        sample_df = pd.read_csv(sample_csv_path, encoding='latin1')
+        sample_df = pd.read_csv(sample_csv_path, encoding='utf-8')
         
         # Create an empty DataFrame with the same columns as the sample CSV.
         product_df = pd.DataFrame(columns=sample_df.columns)

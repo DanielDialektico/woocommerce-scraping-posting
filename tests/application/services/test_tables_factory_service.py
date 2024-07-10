@@ -57,7 +57,7 @@ def test_create_tables(mock_setup_logging, mock_files_output_path, mock_product_
 @patch('src.application.services.tables_factory_service.pd.DataFrame.to_csv')
 def test_save_products_csv(mock_to_csv, mock_files_output_path):
     # Arrange
-    mock_files_output_path.return_value = 'mock/path/files/tables/scrapped-products.csv'
+    mock_files_output_path.return_value = 'mock/path/files/tables/scraped-products.csv'
     service = TablesFactoryService()
     test_df = pd.DataFrame({'sku': ['sku1', 'sku2']})
 
@@ -65,4 +65,4 @@ def test_save_products_csv(mock_to_csv, mock_files_output_path):
     service.save_products_csv(test_df)
 
     # Assert
-    mock_to_csv.assert_called_once_with('mock/path/files/tables/scrapped-products.csv', index=False, encoding='latin1')
+    mock_to_csv.assert_called_once_with('mock/path/files/tables/scraped-products.csv', index=False, encoding='utf-8')

@@ -23,16 +23,16 @@ def setup_logging(service_name: str):
     Set up logging for a specific service.
 
     Args:
-        service_name (str): The name of the service for logging.
+        service_name (str): The name of the service for logging that is going to create a file to save the logs.
     """
     log_directory = files_output_path('logs', service_name)
     os.makedirs(os.path.dirname(log_directory), exist_ok=True)
 
-    logging.basicConfig(
-        filename=log_directory,
-        level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-
     logger = logging.getLogger(service_name)
+    if not logger.hasHandlers():
+        handler = logging.FileHandler(log_directory, encoding='utf-8')
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+
     return logger
