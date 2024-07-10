@@ -1,6 +1,6 @@
 # URLS.
-CRAWL_URL = 'https://www.petmarkt.com.mx/'
-CATEGORIES_URL = 'https://www.petmarkt.com.mx/collections/all/products/'
+CRAWL_URL = 'your_url_to_crawl'
+CATEGORIES_URL = 'reference_prefix_to_scrape'
 
 # Files to save the product information.
 PRODUCT_URLS_CSV = 'products_urls.csv'
