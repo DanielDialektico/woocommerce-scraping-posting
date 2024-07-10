@@ -1,4 +1,3 @@
-# Import the necessary configurations and pipeline classes
 from src.config.ioc import ioc_config
 from src.pipelines import WebsiteCrawlingPipeline, WebsiteScrapingPipeline, ImagesUploadPipeline, ProductsUploadingPipeline
 
