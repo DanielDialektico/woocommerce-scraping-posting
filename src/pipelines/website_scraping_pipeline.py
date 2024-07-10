@@ -1,16 +1,14 @@
 import pandas as pd
 import os
 import requests
-from src.config.config import PRODUCT_URLS_CSV, LOGGING_SCRAPING_FILE
+import re
+from src.config.config import TEST_SCRAPE_URLS, LOGGING_SCRAPING_FILE
 from src.common.utils import files_output_path, setup_logging
 from src.domain.abstractions import WebsiteScrapingPipelineProtocol
 
-# Initialize the logger
-logger = setup_logging(LOGGING_SCRAPING_FILE)
-
 class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
     """
-    A pipeline class for scraping website data and saving the scrapped data and images.
+    A pipeline class for scraping website data and saving the scraped data and images.
     """
     
     def __init__(self, container):
@@ -20,6 +18,7 @@ class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
         Args:
             container (object): The dependency injection container.
         """
+        self.logger = setup_logging(LOGGING_SCRAPING_FILE)
         self.container = container
         self.tables_factory_service = container.config('tables_factory_service')
         self.scraping_service = container.config('scraping_service')
@@ -29,25 +28,25 @@ class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
         Execute the web scraping pipeline.
         """
         print("\n\n-----Web scraping Stage-----\n")
-        logger.info("Starting Web scraping Stage")
+        self.logger.info("Starting Web scraping Stage")
 
         urls_df = self.load_urls()
         if urls_df is None:
             return
 
-        scrapped_dfs_list = self.scrape_urls(urls_df)
+        scraped_dfs_list = self.scrape_urls(urls_df)
 
-        self.save_scrapped_data(scrapped_dfs_list)
+        self.save_scraped_data(scraped_dfs_list)
 
     def load_urls(self):
         """
         Load URLs from the CSV file.
         """
         try:
-            urls_path = files_output_path('files\\tables', PRODUCT_URLS_CSV)
+            urls_path = files_output_path('files\\tables', TEST_SCRAPE_URLS)
             return pd.read_csv(urls_path, encoding='latin1')
         except Exception as e:
-            logger.error(f"Error reading URLs file: {e}")
+            self.logger.error(f"Error reading URLs file: {e}")
             print(f"Error reading URLs file: {e}")
             return None
 
@@ -55,19 +54,19 @@ class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
         """
         Scrape data from the URLs in the DataFrame.
         """
-        scrapped_dfs_list = []
+        scraped_dfs_list = []
         counter = 0
 
         for url in urls_df['Cleaned_URL']:
-            scrapped_data = self.scrape_url(url)
-            if scrapped_data:
-                self.process_scrapped_data(scrapped_data, scrapped_dfs_list, url)
+            scraped_data = self.scrape_url(url)
+            if scraped_data:
+                self.process_scraped_data(scraped_data, scraped_dfs_list, url)
                 counter += 1
                 if counter % 50 == 0:
-                    print(f'{counter} URLs have been scrapped.\n')
-                    logger.info(f'{counter} URLs have been scrapped.')
+                    print(f'{counter} URLs have been scraped.\n')
+                    self.logger.info(f'{counter} URLs have been scraped.')
 
-        return scrapped_dfs_list
+        return scraped_dfs_list
 
     def scrape_url(self, url):
         """
@@ -76,39 +75,49 @@ class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
         try:
             return self.scraping_service.scrape(url)
         except Exception as e:
-            logger.error(f"Error scraping URL {url}: {e}")
+            self.logger.error(f"Error scraping URL {url}: {e}")
             print(f"Error scraping URL {url}: {e}")
             return None
 
-    def process_scrapped_data(self, scrapped_data, scrapped_dfs_list, url):
+    def process_scraped_data(self, scraped_data, scraped_dfs_list, url):
         """
-        Process the scrapped data and save images.
+        Process the scraped data and save images.
         """
-        title = scrapped_data["title"]
+        title = scraped_data["title"]
         cleaned_title = title.replace(' ', '_')
         product_path = self.create_product_path(cleaned_title)
 
-        image_names = self.download_images(scrapped_data["images"], product_path)
+        image_names = self.download_images(scraped_data["images"], product_path)
 
         try:
-            scrapped_df = self.tables_factory_service.create_tables(
-                scrapped_data["product_data"], title, scrapped_data["price"], 
-                scrapped_data["description"], scrapped_data["brand"], 
-                scrapped_data["tags"], image_names, scrapped_data["attribute"]
+            scraped_df = self.tables_factory_service.create_tables(
+                scraped_data["product_data"], title, scraped_data["price"], 
+                scraped_data["description"], scraped_data["brand"], 
+                scraped_data["tags"], image_names, scraped_data["attribute"]
             )
-            scrapped_dfs_list.append(scrapped_df)
+            scraped_dfs_list.append(scraped_df)
         except Exception as e:
-            logger.error(f"Error creating tables for URL {url}: {e}")
+            self.logger.error(f"Error creating tables for URL {url}: {e}")
             print(f"Error creating tables for URL {url}: {e}")
 
-    def create_product_path(self, cleaned_title):
+    def create_product_path(self, cleaned_title: str) -> str:
         """
         Create the product path for saving images.
         """
-        product_path = files_output_path('files\\images', cleaned_title)
+        cleaned_title = re.sub(r'[<>:"/\\|?*]', '_', cleaned_title)
+        base_path = os.path.join('files', 'images')
+        max_length = 220 - len(os.path.abspath(base_path)) - 1
+
+        if len(cleaned_title) > max_length:
+            cleaned_title = cleaned_title[:max_length]
+
+        product_path = os.path.join(base_path, cleaned_title)
+        
         if not os.path.exists(product_path):
             os.makedirs(product_path)
-        return product_path
+
+        return product_path    
+
 
     def download_images(self, images, product_path):
         """
@@ -127,24 +136,24 @@ class WebsiteScrapingPipeline(WebsiteScrapingPipelineProtocol):
                     handler.write(img_data)
                 image_names.append(f'product_image_{idx}.jpg')
             except Exception as e:
-                logger.error(f"Error downloading/saving image {img_url}: {e}")
+                self.logger.error(f"Error downloading/saving image {img_url}: {e}")
                 print(f"Error downloading/saving image {img_url}: {e}")
 
         return image_names
 
-    def save_scrapped_data(self, scrapped_dfs_list):
+    def save_scraped_data(self, scraped_dfs_list):
         """
-        Save the scrapped data.
+        Save the scraped data.
         """
-        if scrapped_dfs_list:
+        if scraped_dfs_list:
             try:
-                all_scrapped_data = pd.concat(scrapped_dfs_list, ignore_index=True)
-                self.tables_factory_service.save_products_csv(all_scrapped_data)
+                all_scraped_data = pd.concat(scraped_dfs_list, ignore_index=True)
+                self.tables_factory_service.save_products_csv(all_scraped_data)
                 path = files_output_path('files\\images', '')
                 print(f'The images have been saved to {path}')
             except Exception as e:
-                logger.error(f"Error saving concatenated data: {e}")
+                self.logger.error(f"Error saving concatenated data: {e}")
                 print(f"Error saving concatenated data: {e}")
         else:
             print("No dataframes to concatenate and save.")
-            logger.info("No dataframes to concatenate and save.")
+            self.logger.info("No dataframes to concatenate and save.")

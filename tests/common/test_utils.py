@@ -21,23 +21,26 @@ def test_files_output_path(tmpdir):
 @patch('src.common.utils.files_output_path')
 @patch('src.common.utils.os.makedirs')
 @patch('src.common.utils.logging.getLogger')
-@patch('src.common.utils.logging.basicConfig')
-def test_setup_logging(mock_basic_config, mock_get_logger, mock_makedirs, mock_files_output_path, tmpdir):
+@patch('src.common.utils.logging.FileHandler')
+def test_setup_logging(mock_file_handler, mock_get_logger, mock_makedirs, mock_files_output_path, tmpdir):
     # Arrange
     service_name = 'test_service'
     log_path = os.path.join(tmpdir, 'logs', service_name)
     mock_files_output_path.return_value = log_path
     mock_logger = MagicMock()
+    mock_handler = MagicMock()
     mock_get_logger.return_value = mock_logger
+    mock_file_handler.return_value = mock_handler
+    mock_logger.hasHandlers.return_value = False  # Simulate logger without handlers
 
     # Act
     logger = setup_logging(service_name)
 
     # Assert
-    mock_basic_config.assert_called_once_with(
-        filename=log_path,
-        level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    mock_makedirs.assert_called_once_with(os.path.dirname(log_path), exist_ok=True)
+    mock_file_handler.assert_called_once_with(log_path)
+    mock_handler.setFormatter.assert_called_once()  # Check that setFormatter was called
+    mock_logger.addHandler.assert_called_once_with(mock_handler)
+    mock_logger.setLevel.assert_called_once_with(logging.DEBUG)
     mock_get_logger.assert_called_once_with(service_name)
     assert logger == mock_logger

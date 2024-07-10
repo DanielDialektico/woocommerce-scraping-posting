@@ -2,11 +2,8 @@ import os
 from typing import List
 import pandas as pd
 from src.common.utils import files_output_path, setup_logging
-from src.config.config import SCRAPPED_PRODUCTS_CSV, UPDATED_PRODUCTS_CSV, LOGGING_IMAGES_FILE
+from src.config.config import SCRAPED_PRODUCTS_CSV, UPDATED_PRODUCTS_CSV, LOGGING_IMAGES_FILE
 from src.domain.abstractions import ImagesFactoryServiceProtocol
-
-# Set up logging
-logger = setup_logging(LOGGING_IMAGES_FILE)
 
 class ImagesFactoryService(ImagesFactoryServiceProtocol):
     def __init__(self):
@@ -15,9 +12,10 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
 
         Loads the WooCommerce DataFrame from a CSV file and sets the base path for images.
         """
-        self.wooc_df = pd.read_csv(files_output_path('files\\tables', SCRAPPED_PRODUCTS_CSV), encoding='latin1')
+        self.wooc_df = pd.read_csv(files_output_path('files\\tables', SCRAPED_PRODUCTS_CSV), encoding='latin1')
         self.images_base_path = files_output_path('files\\images', '')
-        logger.info("Initialized ImagesFactoryService.")
+        self.logger = setup_logging(LOGGING_IMAGES_FILE)
+
 
     def create_paths_table(self) -> pd.DataFrame:
         """
@@ -37,7 +35,8 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
         5. Renames images and updates the 'route' column.
         6. Removes duplicate paths and returns the updated DataFrame.
         """
-        logger.info("Creating paths table.")
+        self.logger.info("Initialized ImagesFactoryService.")        
+        self.logger.info("Creating paths table.")
         paths_df = self.wooc_df[['name', 'image_id/gallery_image_ids', 'sku', 'parent_id']].copy()
 
         for index, row in paths_df.iterrows():
@@ -45,7 +44,7 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
                 parent_name = paths_df.loc[paths_df['sku'] == row['parent_id'], 'name'].values
                 if len(parent_name) > 0:
                     paths_df.at[index, 'name'] = parent_name[0]
-                    logger.debug(f"Updated name for SKU {row['sku']} to parent name {parent_name[0]}.")
+                    self.logger.debug(f"Updated name for SKU {row['sku']} to parent name {parent_name[0]}.")
 
         paths_df = paths_df.assign(image_id=paths_df['image_id/gallery_image_ids'].str.split(',')).explode('image_id')
         paths_df['route'] = paths_df.apply(lambda row: os.path.join(self.images_base_path, row['name'].replace(' ', '_'), row['image_id'].strip()), axis=1)
@@ -57,9 +56,9 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
             new_path = os.path.join(self.images_base_path, row['name'].replace(' ', '_'), new_image_name)
             os.rename(old_path, new_path)
             paths_df.at[index, 'route'] = new_path
-            logger.debug(f"Renamed image {old_path} to {new_path}.")
+            self.logger.debug(f"Renamed image {old_path} to {new_path}.")
 
-        logger.info("Paths table created successfully.")
+        self.logger.info("Paths table created successfully.")
         return paths_df    
 
     def update_wc_table(self, paths_df: pd.DataFrame, image_urls: List[str]) -> pd.DataFrame:
@@ -80,16 +79,16 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
         4. Updates the 'image_id/gallery_image_ids' column in the original DataFrame with the new URLs.
         5. Returns the updated DataFrame.
         """
-        logger.info("Updating WooCommerce table with image URLs.")
+        self.logger.info("Updating WooCommerce table with image URLs.")
         df = self.wooc_df.copy()
         paths_df['image_url'] = [url for _, url in sorted(image_urls, key=lambda x: x[0])]
         sku_to_urls = paths_df.groupby('sku')['image_url'].apply(lambda urls: ', '.join(filter(None, urls))).to_dict()
 
         for sku, urls in sku_to_urls.items():
             df.loc[df['sku'] == sku, 'image_id/gallery_image_ids'] = urls
-            logger.debug(f"Updated SKU {sku} with URLs: {urls}")
+            self.logger.debug(f"Updated SKU {sku} with URLs: {urls}")
 
-        logger.info("WooCommerce table updated successfully.")
+        self.logger.info("WooCommerce table updated successfully.")
         return df    
 
     def save_updated_csv(self, df: pd.DataFrame) -> None:
@@ -109,4 +108,4 @@ class ImagesFactoryService(ImagesFactoryServiceProtocol):
         """
         output_path = files_output_path('files\\tables', UPDATED_PRODUCTS_CSV)
         df.to_csv(output_path, index=False, encoding='latin1')
-        logger.info(f"Updated CSV with image URLs has been saved to {output_path}")
+        self.logger.info(f"Updated CSV with image URLs has been saved to {output_path}")
